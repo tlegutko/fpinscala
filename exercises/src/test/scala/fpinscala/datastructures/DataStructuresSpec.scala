@@ -44,10 +44,16 @@ class DataStructuresSpec extends FunSuite {
   test("init") {
     val l = List(1, 2, 3, 4)
     assert(List.init(l) == List(1,2,3))
+    assert(List.init2(l) == List(1,2,3))
   }
 
   test("length") {
     val l = List(1, 2, 3)
     assert(List.length(l) == 3)
+  }
+
+  test("product") {
+    val l = List(1.0, 2.0, 0, 3.0, 4.0)
+    assert(List.product3(l) == 0)
   }
 }
