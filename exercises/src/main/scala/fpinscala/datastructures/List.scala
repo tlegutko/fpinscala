@@ -1,5 +1,7 @@
 package fpinscala.datastructures
 
+import scala.annotation.tailrec
+
 sealed trait List[+A] // `List` data type, parameterized on a type, `A`
 case object Nil extends List[Nothing] // A `List` data constructor representing the empty list
 /* Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`,
@@ -50,17 +52,46 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
 
 
-  def tail[A](l: List[A]): List[A] = ???
+  def tail[A](l: List[A]): List[A] = l match {
+    case Cons(h, t) => t
+    case Nil => Nil
+  }
 
-  def setHead[A](l: List[A], h: A): List[A] = ???
+  def setHead[A](l: List[A], h: A): List[A] = l match {
+    case Cons(oldH, t) => Cons(h, t)
+    case Nil => Cons(h, Nil)
+  }
 
-  def drop[A](l: List[A], n: Int): List[A] = ???
+  def drop[A](l: List[A], n: Int): List[A] = {
+    if (n == 0) l
+    else drop(List.tail(l), n-1)
+  }
 
-  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = ???
+  def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
+    case Cons(h, t) => if (f(h)) dropWhile(t, f) else l
+    case Nil => Nil
+  }
 
-  def init[A](l: List[A]): List[A] = ???
+  def init[A](l: List[A]): List[A] = {
+    def reverse(li: List[A]): List[A] = {
+      @tailrec
+      def go(curr: List[A], toVisit: List[A]): List[A] = toVisit match {
+        case Cons(h, t) => go(Cons(h, curr), t)
+        case Nil => curr
+      }
+      go(Nil, li)
+    }
+    reverse(List.tail(reverse(l)))
+  }
 
-  def length[A](l: List[A]): Int = ???
+  def length[A](l: List[A]): Int = {
+    @tailrec
+    def go(li: List[A], cnt: Int): Int = li match {
+      case Cons(h, t) => go(t, cnt + 1)
+      case Nil => cnt
+    }
+    go(l, 0)
+  }
 
   def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = ???
 
