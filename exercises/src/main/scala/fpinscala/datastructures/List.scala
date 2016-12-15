@@ -31,14 +31,6 @@ object List {
     if (as.isEmpty) Nil
     else Cons(as.head, apply(as.tail: _*))
 
-  val x = List(1, 2, 3, 4, 5) match {
-    case Cons(x, Cons(2, Cons(4, _))) => x
-    case Nil => 42
-    case Cons(x, Cons(y, Cons(3, Cons(4, _)))) => x + y
-    case Cons(h, t) => h + sum(t)
-    case _ => 101
-  }
-
   def append[A](a1: List[A], a2: List[A]): List[A] =
     a1 match {
       case Nil => a2
@@ -51,19 +43,21 @@ object List {
       case Cons(x, xs) => f(x, foldRight(xs, z)(f))
     }
 
-  def sum2(ns: List[Int]) =
+  def sum2(ns: List[Int]): Int =
     foldRight(ns, 0)((x, y) => x + y)
 
-  def product2(ns: List[Double]) =
+  def product2(ns: List[Double]): Double =
     foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
 
   def product3(ns: List[Double]): Double = {
-    def foldR(as: List[A]): Double = {
+    def foldR(as: List[Double]): Double = {
       println(as)
       as match {
         case Nil => 1.0
         case Cons(0.0, _) => 0.0
-        case Cons(x, xs) => x + foldR(xs)
+        case Cons(x, xs) =>
+          val f = foldR(xs)
+          if (f == 0) f else x + f
       }
     }
     foldR(ns)
@@ -71,12 +65,12 @@ object List {
 
 
   def tail[A](l: List[A]): List[A] = l match {
-    case Cons(h, t) => t
+    case Cons(_, t) => t
     case Nil => Nil
   }
 
   def setHead[A](l: List[A], h: A): List[A] = l match {
-    case Cons(oldH, t) => Cons(h, t)
+    case Cons(_, t) => Cons(h, t)
     case Nil => Cons(h, Nil)
   }
 
@@ -106,22 +100,55 @@ object List {
     // non tail-rec with just one iteration
     def go(curr: List[A], toVisit: List[A]): List[A] = toVisit match {
       case Nil => Nil
-      case Cons(h, Nil) => curr
+      case Cons(_, Nil) => curr
       case Cons(h, t) => Cons(h, go(curr, t))
     }
     go(Nil, l)
   }
 
   def length[A](l: List[A]): Int = {
+    foldRight(l, 0)((_, cnt: Int) => cnt + 1)
+  }
+
+  def length2[A](l: List[A]): Int = {
     @tailrec
     def go(li: List[A], cnt: Int): Int = li match {
-      case Cons(h, t) => go(t, cnt + 1)
+      case Cons(_, t) => go(t, cnt + 1)
       case Nil => cnt
     }
     go(l, 0)
   }
 
-  def foldLeft[A, B](l: List[A], z: B)(f: (B, A) => B): B = sys.error("todo")
+  def foldLeft2[A, B](l: List[A], z: B)(f: (B, A) => B): B = {
+    @tailrec
+    def go(li: List[A], total: B): B =
+      li match {
+        case Nil => z
+        case Cons(h, Nil) => f(total, h)
+        case Cons(h, t) => go(t, f(total, h))
+      }
+    go(l, z)
+  }
 
-  def map[A, B](l: List[A])(f: A => B): List[B] = sys.error("todo")
+  def foldLeft[A, B](l: List[A], z: B)(f: (B, A) => B): B = l match {
+    case Nil => z
+    case Cons(h, t) => foldLeft(t, f(z, h))(f)
+  }
+
+  def sum3(l: List[Int]): Int =
+    List.foldLeft(l, 0)(_ + _)
+
+  def product4(l: List[Double]): Double =
+    List.foldLeft(l, 1.0)(_ * _)
+
+  def length3[A](l: List[A]): Double =
+    List.foldLeft(l, 0)((acc, _) => acc + 1)
+
+  def map[A, B](l: List[A])(f: A => B): List[B] = {
+    def go(curr: List[B], toVisit: List[A]): List[B] = toVisit match {
+      case Nil => curr
+      case Cons(h, t) => Cons(f(h), go(curr, t))
+    }
+    go(Nil, l)
+  }
 }
