@@ -9,7 +9,7 @@ case object Nil extends List[Nothing]
 
 // A `List` data constructor representing the empty list
 /* Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`,
-which may be `Nil` or another `Cons`.
+ which may be `Nil` or another `Cons`.
  */
 case class Cons[+A](head: A, tail: List[A]) extends List[A]
 
@@ -62,7 +62,6 @@ object List {
     }
     foldR(ns)
   }
-
 
   def tail[A](l: List[A]): List[A] = l match {
     case Cons(_, t) => t
@@ -142,7 +141,7 @@ object List {
     List.foldLeft(l, 1.0)(_ * _)
 
   def length3[A](l: List[A]): Double =
-    List.foldLeft(l, 0)((acc, _) => acc + 1)
+    List.foldLeft(l, 0.0)((acc, _) => acc + 1)
 
   def map[A, B](l: List[A])(f: A => B): List[B] = {
     def go(curr: List[B], toVisit: List[A]): List[B] = toVisit match {
@@ -150,5 +149,48 @@ object List {
       case Cons(h, t) => Cons(f(h), go(curr, t))
     }
     go(Nil, l)
+  }
+
+  def reverse[A](l: List[A]): List[A] = {
+    List.foldLeft(l, List[A]())((acc: List[A], curr: A) => Cons(curr, acc))
+  }
+
+  def foldLeftWithFoldRight[A,B](l: List[A], z: B)(f: (B,A) => B) = {
+    List.foldRight(List.reverse(l), z)((a,b) => f(b,a))
+  }
+
+  def foldRightWithFoldLeft[A,B](l: List[A], z: B)(f: (B,A) => B) = {
+    List.foldLeft(List.reverse(l), z)(f)
+  }
+
+  def appendWithFold[A](l1: List[A], l2: List[A]): List[A] = {
+    List.foldRight(l1, l2)(Cons(_, _))
+  }
+
+  def concat[A](l: List[List[A]]): List[A] = {
+    List.foldRight(l, Nil: List[A])(append)
+  }
+
+  def addOne(l: List[Int]): List[Int] = {
+    List.map(l)(_ + 1)
+  }
+
+  def mapToStr(l: List[Double]): List[String] = {
+    List.map(l)(_.toString)
+  }
+
+  def mapWithFold[A, B](l: List[A])(f: A => B): List[B] = {
+    List.foldRight(l, Nil: List[B]){case (x, acc) => Cons(f(x), acc)}
+  }
+
+  def filter[A](l: List[A])(f: A => Boolean) = {
+    List.foldRight(l, Nil: List[A])((x, acc) => {
+                                      if (f(x)) Cons(x, acc)
+                                      else acc
+                                    })
+  }
+
+  def flatMap[A, B](l: List[A])(f: A => List[B]): List[B] = {
+    ???
   }
 }

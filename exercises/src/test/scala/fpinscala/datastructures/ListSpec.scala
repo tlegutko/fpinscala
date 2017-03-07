@@ -82,4 +82,38 @@ class ListSpec extends FunSuite {
     assert(List.product4(List.map(l)(_.toDouble)) == 24)
   }
 
+  test("reverse") {
+    val l = List(1, 2, 3)
+    assert(List.reverse(l) == List(3, 2, 1))
+  }
+
+  test("foldLeft with foldRight and vice versa") {
+    val l = List(1, 2, 3)
+    def visitingOrder(f: (List[Int], List[Int]) => ((List[Int], Int) => List[Int]) => List[Int]): List[Int] = {
+      List.reverse(f(l, Nil: List[Int])((acc, curr) => Cons(curr, acc)))
+    }
+    assert(visitingOrder(List.foldLeftWithFoldRight) == l)
+    assert(visitingOrder(List.foldRightWithFoldLeft) == List.reverse(l))
+  }
+
+  test("append with fold") {
+    assert(List.appendWithFold(List(1, 2), List(3)) == List(1, 2, 3))
+  }
+
+  test("concat lists with fold") {
+    val l = List(List(1, 2), List(3, 4), List(5))
+    assert(List.concat(l) == List(1, 2, 3, 4, 5))
+  }
+
+  test("map with fold") {
+    assert(List.mapWithFold(List(1, 2, 3))(_ + 1) == List(2, 3, 4))
+  }
+
+  test("filter") {
+    assert(List.filter(List(1, 2, 3, 4))(_ % 2 == 0) == List(2, 4))
+  }
+
+  test("flatMap") {
+    assert(List.flatMap(List(1,2))(x => List(x, 3*x)) == List(1, 3, 2, 6))
+  }
 }
