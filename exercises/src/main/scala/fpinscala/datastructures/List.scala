@@ -51,7 +51,6 @@ object List {
 
   def product3(ns: List[Double]): Double = {
     def foldR(as: List[Double]): Double = {
-      println(as)
       as match {
         case Nil => 1.0
         case Cons(0.0, _) => 0.0
@@ -191,6 +190,61 @@ object List {
   }
 
   def flatMap[A, B](l: List[A])(f: A => List[B]): List[B] = {
-    ???
+    List.concat(List.map(l)(f))
   }
+
+  def filterWithFlatMap[A](l: List[A])(f: A => Boolean): List[A] = {
+    flatMap(l)(x => if (f(x)) List(x) else Nil)
+  }
+
+  def addTwoLists(li1: List[Int], li2: List[Int]): List[Int] = {
+    def getHead(l: List[Int]): Int = {
+      l match {
+        case Cons(h, _) => h
+        case Nil => 0
+      }
+    }
+    @tailrec
+    def loop(acc: List[Int], l1: List[Int], l2: List[Int]): List[Int] = {
+      if (l1 == Nil && l2 == Nil)
+        acc
+      else
+        loop(Cons(getHead(l1) + getHead(l2), acc), tail(l1), tail(l2))
+    }
+    reverse(loop(Nil, li1, li2))
+  }
+
+  def addTwoLists2[A](li1: List[A], li2: List[A])(f: (A, A) => A): List[A] = {
+    def headsF(l1: List[A], l2: List[A]): A = {
+      l1 match {
+        case Cons(h1, _) => l2 match {
+          case Cons(h2, _) => f(h1, h2)
+          case Nil => h1
+        }
+        case Nil => l2 match {
+          case Cons(h2, _) => h2
+          case Nil => ??? // 2 empty lists are not allowed
+        }
+       }
+    }
+    @tailrec
+    def loop(acc: List[A], l1: List[A], l2: List[A]): List[A] = {
+      if (l1 == Nil && l2 == Nil)
+        acc
+      else {
+        loop(Cons(headsF(l1, l2), acc), tail(l1), tail(l2))
+      }
+    }
+    reverse(loop(Nil, li1, li2))
+  }
+
+  def hasSubsequence[A](l: List[A], sub: List[A]): Boolean = {
+    (l, sub) match {
+      case (_, Nil) => true
+      case (Nil, _) => false
+      case (Cons(h1, _), Cons(h2, _)) if h1 == h2 => hasSubsequence(tail(l), tail(sub))
+      case _ => hasSubsequence(tail(l), sub)
+    }
+  }
+
 }

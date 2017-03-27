@@ -116,4 +116,18 @@ class ListSpec extends FunSuite {
   test("flatMap") {
     assert(List.flatMap(List(1,2))(x => List(x, 3*x)) == List(1, 3, 2, 6))
   }
+
+  test("filter with flatMap") {
+    assert(List.filterWithFlatMap(List(1, 2, 3, 4))(_ % 2 == 0) == List(2, 4))
+  }
+
+  test("addTwoLists") {
+    assert(List.addTwoLists(List(1, 2, 3), List(4, 5, 6)) == List(5, 7, 9))
+    assert(List.addTwoLists2(List(1, 2, 3), List(4, 5, 6))(_ + _) == List(5, 7, 9))
+  }
+
+  test("hasSubsequence") {
+    assert(List.hasSubsequence(List(1, 2, 2, 3, 4), List(2, 3)) == true)
+  }
+
 }
