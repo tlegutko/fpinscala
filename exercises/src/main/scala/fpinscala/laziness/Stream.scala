@@ -112,13 +112,17 @@ trait Stream[+A] {
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
 
-  def map[B](f: A => B): Stream[A] = ???
+  def map[B](f: A => B): Stream[B] =
+    foldRight(empty[B])((a, b) => cons(f(a), b))
 
-  def filter(f: A => Boolean): Stream[A] = ???
+  def filter(f: A => Boolean): Stream[A] =
+    foldRight(empty[A])((a, b) => if (f(a)) cons(a, b) else b)
 
-  def append(x: A): Stream[A] = ???
+  def append[B>:A](x: => Stream[B]): Stream[B] =
+    foldRight(x)((a, b) => cons(a, b))
 
-  def flatMap(f: A => Stream[A]): Stream[A] = ???
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((a, b) => f(a).append(b))
 
   def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
 }
@@ -139,7 +143,24 @@ object Stream {
     else cons(as.head, apply(as.tail: _*))
 
   val ones: Stream[Int] = Stream.cons(1, ones)
+<<<<<<< HEAD
   def from(n: Int): Stream[Int] = ???
+=======
+
+  def constant[A](a: A): Stream[A] =
+    cons(a, constant(a))
+
+  def from(n: Int): Stream[Int] =
+    cons(n, from(n+1))
+
+  def fibs(): Stream[Int] = {
+    def go(curr: Int, prev: Int): Stream[Int] = {
+      cons(prev, go(curr + prev, curr))
+    }
+    go(1, 0)
+  }
+
+>>>>>>> Done up to ex. 9 in laziness chapter.
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = sys.error("todo")
 }
