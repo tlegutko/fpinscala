@@ -160,7 +160,23 @@ object Stream {
     go(1, 0)
   }
 
+<<<<<<< HEAD
 >>>>>>> Done up to ex. 9 in laziness chapter.
+=======
+  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = {
+    f(z) match {
+      case Some((a, s)) => cons(a, unfold(s)(f))
+      case None => empty
+    }
+  }
 
-  def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = sys.error("todo")
+  def constantWithUnfold[A](a: A): Stream[A] =
+    unfold(a)(a => Some((a, a)))
+
+  def fromWithUnfold(n: Int): Stream[Int] =
+    unfold(n)(n => Some((n, n + 1)))
+>>>>>>> Unfold (ex. 10-11 from laziness).
+
+  def fibsWithUnfold(): Stream[Int] =
+    unfold(1, 0){ case (curr, prev) => Some((prev, (curr + prev, curr))) }
 }

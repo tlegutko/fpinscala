@@ -38,9 +38,21 @@ class StreamSpec extends FunSuite {
   }
 
   test("constant, from, fibs") {
-    val s = Stream.constant(("a", 3))
-    assert(s.take(2).toList() == List(("a", 3), ("a", 3))) 
+    assert(Stream.constant(("a", 3)).take(2).toList() == List(("a", 3), ("a", 3))) 
     assert(Stream.from(10).take(4).toList() == List(10, 11, 12, 13))
-    assert(Stream.fibs.take(7).toList == List(0, 1, 1, 2, 3, 5, 8))
+    assert(Stream.fibs().take(7).toList == List(0, 1, 1, 2, 3, 5, 8))
+  }
+
+  test("unfold") {
+    assert(Stream.unfold(List(1, 2, 3))(l => l match {
+                                         case h :: t => Some((h * 3, t))
+                                         case Nil => None
+                                       }).toList() == List(3, 6, 9))
+  }
+
+  test("constant, from, fibs using unfold") {
+    assert(Stream.constantWithUnfold(("a", 3)).take(2).toList() == List(("a", 3), ("a", 3)))
+    assert(Stream.fromWithUnfold(10).take(4).toList() == List(10, 11, 12, 13))
+    assert(Stream.fibsWithUnfold().take(7).toList == List(0, 1, 1, 2, 3, 5, 8))
   }
 }
