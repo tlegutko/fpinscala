@@ -1,5 +1,8 @@
 package fpinscala.state
 
+import scala.collection.mutable.ListBuffer
+
+
 
 trait RNG {
   def nextInt: (Int, RNG) // Should generate a random `Int`. We'll later define other functions in terms of `nextInt`.
@@ -30,17 +33,73 @@ object RNG {
       (f(a), rng2)
     }
 
-  def nonNegativeInt(rng: RNG): (Int, RNG) = ???
+  def nonNegativeInt2(rng: RNG): (Int, RNG) =
+    rng.nextInt match {
+      case (n, rng2) =>
+        if (n != Int.MinValue) (n.abs, rng2)
+        else (Int.MaxValue, rng2)
+    }
 
-  def double(rng: RNG): (Double, RNG) = ???
+  def nonNegativeInt(rng: RNG): (Int, RNG) = {
+    val (n, rng2) = rng.nextInt
+    if (n != Int.MinValue) (n.abs, rng2)
+    else (Int.MaxValue, rng2)
 
-  def intDouble(rng: RNG): ((Int,Double), RNG) = ???
+  }
 
-  def doubleInt(rng: RNG): ((Double,Int), RNG) = ???
+  def double(rng: RNG): (Double, RNG) = {
+    val (n, rng2) = nonNegativeInt(rng)
+    ((-n / Int.MinValue).toDouble, rng2)
+  }
 
-  def double3(rng: RNG): ((Double,Double,Double), RNG) = ???
+  def intDouble(rng: RNG): ((Int,Double), RNG) = {
+    val (i, rng2) = rng.nextInt
+    val (d, rng3) = double(rng2)
+    ((i, d), rng3)
+  }
 
-  def ints(count: Int)(rng: RNG): (List[Int], RNG) = ???
+  def doubleInt(rng: RNG): ((Double,Int), RNG) = {
+    val ((i, d), r) = intDouble(rng)
+    ((d, i), r)
+  }
+
+  def double3(rng: RNG): ((Double,Double,Double), RNG) = {
+    val (d1, r1) = double(rng)
+    val (d2, r2) = double(r1)
+    val (d3, r3) = double(r2)
+    ((d1, d2, d3), r3)
+  }
+
+  def ints2(count: Int)(rng: RNG): (List[Int], RNG) = {
+    @annotation.tailrec
+    def go(c: Int, r: RNG, acc: ListBuffer[Int]): (List[Int], RNG) = {
+      if (c > 0) {
+        val (n, r2) = r.nextInt
+        acc.append(n)
+        go(c - 1, r2, acc)
+      }
+      else (acc.toList, r)
+    }
+    go(count, rng, ListBuffer.empty)
+  }
+
+  def ints(count: Int)(rng: RNG): (List[Int], RNG) = {
+    @annotation.tailrec
+    def go(c: Int, r: RNG, acc: List[Int]): (List[Int], RNG) = {
+      if (c > 0) {
+        val (n, r2) = r.nextInt
+        go(c - 1, r2, n :: acc)
+      }
+      else (acc.toList, r)
+    }
+    go(count, rng, List.empty)
+  }
+
+  def positiveMax(n: Int): Rand[Int] = 
+    map(rng => rng.nextInt)(_ % (n+1))
+
+  def doubleWithMap(): Rand[Double] =
+    map(nonNegativeInt)(_ / (Int.MaxValue.toDouble + 1))
 
   def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
 
