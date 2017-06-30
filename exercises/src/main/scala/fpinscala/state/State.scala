@@ -2,8 +2,6 @@ package fpinscala.state
 
 import scala.collection.mutable.ListBuffer
 
-
-
 trait RNG {
   def nextInt: (Int, RNG) // Should generate a random `Int`. We'll later define other functions in terms of `nextInt`.
 }
@@ -27,7 +25,7 @@ object RNG {
   def unit[A](a: A): Rand[A] =
     rng => (a, rng)
 
-  def map[A,B](s: Rand[A])(f: A => B): Rand[B] =
+  def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
     rng => {
       val (a, rng2) = s(rng)
       (f(a), rng2)
@@ -52,18 +50,18 @@ object RNG {
     ((-n / Int.MinValue).toDouble, rng2)
   }
 
-  def intDouble(rng: RNG): ((Int,Double), RNG) = {
+  def intDouble(rng: RNG): ((Int, Double), RNG) = {
     val (i, rng2) = rng.nextInt
     val (d, rng3) = double(rng2)
     ((i, d), rng3)
   }
 
-  def doubleInt(rng: RNG): ((Double,Int), RNG) = {
+  def doubleInt(rng: RNG): ((Double, Int), RNG) = {
     val ((i, d), r) = intDouble(rng)
     ((d, i), r)
   }
 
-  def double3(rng: RNG): ((Double,Double,Double), RNG) = {
+  def double3(rng: RNG): ((Double, Double, Double), RNG) = {
     val (d1, r1) = double(rng)
     val (d2, r2) = double(r1)
     val (d3, r3) = double(r2)
@@ -77,8 +75,7 @@ object RNG {
         val (n, r2) = r.nextInt
         acc.append(n)
         go(c - 1, r2, acc)
-      }
-      else (acc.toList, r)
+      } else (acc.toList, r)
     }
     go(count, rng, ListBuffer.empty)
   }
@@ -89,32 +86,112 @@ object RNG {
       if (c > 0) {
         val (n, r2) = r.nextInt
         go(c - 1, r2, n :: acc)
-      }
-      else (acc.toList, r)
+      } else (acc.toList, r)
     }
     go(count, rng, List.empty)
   }
 
-  def positiveMax(n: Int): Rand[Int] = 
-    map(rng => rng.nextInt)(_ % (n+1))
+  def positiveMax(n: Int): Rand[Int] =
+    map(nonNegativeInt)(_ % (n + 1))
 
-  def doubleWithMap(): Rand[Double] =
+  def doubleWithMap: Rand[Double] =
     map(nonNegativeInt)(_ / (Int.MaxValue.toDouble + 1))
 
-  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
+  def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+    rng => {
+      val (a, rngA2) = ra(rng)
+      val (b, rngB2) = rb(rngA2)
+      (f(a, b), rngB2)
+    }
 
-  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = ???
+  def intDoubleWithMap2: Rand[(Int, Double)] =
+    map2(int, doubleWithMap)((a, b) => (a, b))
 
-  def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
+  def doubleIntWithMap2: Rand[(Double, Int)] =
+    map2(int, doubleWithMap)((a, b) => (b, a))
+
+  def sequence2[A](fs: List[Rand[A]]): Rand[List[A]] = rng => {
+    val (l, r) = fs.foldLeft((List.empty[A], rng)) {
+      case ((acc, currRng), r) => {
+        val (x, r2) = r(currRng)
+        (x :: acc, r2)
+      }
+    }
+    (l.reverse, r)
+  }
+
+  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
+    fs.foldRight(unit(List.empty[A]))((r, acc) => map2(r, acc)(_ :: _))
+
+  def intsWithSequence2(count: Int): Rand[List[Int]] =
+    sequence(List.fill(count)(_.nextInt))
+
+  def intsWithSequence(count: Int): Rand[List[Int]] =
+    sequence(List.fill(count)(int))
+
+  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = rng => {
+    val (x, r) = f(rng)
+    g(x)(r)
+  }
+
+  def nonNegativeIntWithFlatMap: Rand[Int] =
+    flatMap(nonNegativeInt) { x =>
+      if (x != Int.MinValue) unit(x)
+      else nonNegativeIntWithFlatMap
+    }
+
+  def mapWithFlatMap[A, B](s: Rand[A])(f: A => B): Rand[B] =
+    flatMap(s)(x => unit(f(x)))
+
+  def map2WithFlatMap2[A, B, C](s1: Rand[A], s2: Rand[B])(f: (A, B) => C): Rand[C] =
+    flatMap(s1) { x1 =>
+      flatMap(s2) { x2 =>
+        unit(f(x1, x2))
+      }
+    }
+
+  def map2WithFlatMap[A, B, C](s1: Rand[A], s2: Rand[B])(f: (A, B) => C): Rand[C] =
+    flatMap(s1) { x1 =>
+      map(s2)(x2 => f(x1, x2))
+    }
+
+  def genericMap[S, A, B](a: S => (A, S))(f: A => B): S => (B, S) =
+    s => {
+      val (a2, s2) = a(s)
+      (f(a2), s2)
+    }
 }
 
-case class State[S,+A](run: S => (A, S)) {
-  def map[B](f: A => B): State[S, B] =
-    ???
-  def map2[B,C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
-    ???
+case class State[S, +A](run: S => (A, S)) {
+  import State._
+
+  def mapV2[B](f: A => B): State[S, B] =
+    State { s =>
+      val (a, s2) = run(s)
+      (f(a), s2)
+    }
+
+  def map2V2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+    State { s =>
+      val (a, s2) = run(s)
+      val (b, s3) = sb.run(s2)
+      (f(a, b), s3)
+    }
+
   def flatMap[B](f: A => State[S, B]): State[S, B] =
-    ???
+    State { s =>
+      val (a, s2) = run(s)
+      f(a).run(s2)
+    }
+
+  def map[B](f: A => B): State[S, B] =
+    flatMap(a => unit(f(a)))
+
+  def map2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
+    flatMap{ a =>
+      sb.map(b => f(a, b))
+    }
+
 }
 
 sealed trait Input
@@ -125,5 +202,12 @@ case class Machine(locked: Boolean, candies: Int, coins: Int)
 
 object State {
   type Rand[A] = State[RNG, A]
+
+  def unit[S, A](a: A): State[S, A] =
+    State(s => (a, s))
+
+  def sequence[S, A](l: List[State[S, A]]): State[S, List[A]] =
+    l.foldRight(unit[S, List[A]](List.empty[A]))((s2, acc) => s2.map2(acc)(_ :: _))
+
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
 }
