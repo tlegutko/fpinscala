@@ -45,5 +45,12 @@ class StateSpec extends FunSuite {
     assert(s.map2(s2)((a, b) => a.toString + b.toString).run(0) == (("a1", 2)))
     assert(s2.flatMap(x => State(s => (x*3, s + 1))).run(1) == ((3, 3)))
     assert(State.sequence(List(s, s2)).run(0) == ((List('a', 1), 2)))
+    
+    assert(State.modify((x: Int) => x + 10).run(0)._2 == 10)
+    State.get.run((s: Int) => (s, s))._2
+  }
+
+  test("Dispenser machine") {
+    // State.simulateMachine(List(Coin, Turn)).run()
   }
 }

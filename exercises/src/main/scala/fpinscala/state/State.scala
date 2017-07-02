@@ -169,7 +169,7 @@ case class State[S, +A](run: S => (A, S)) {
     State { s =>
       val (a, s2) = run(s)
       (f(a), s2)
-    }
+    }    
 
   def map2V2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
     State { s =>
@@ -191,7 +191,6 @@ case class State[S, +A](run: S => (A, S)) {
     flatMap{ a =>
       sb.map(b => f(a, b))
     }
-
 }
 
 sealed trait Input
@@ -208,6 +207,17 @@ object State {
 
   def sequence[S, A](l: List[State[S, A]]): State[S, List[A]] =
     l.foldRight(unit[S, List[A]](List.empty[A]))((s2, acc) => s2.map2(acc)(_ :: _))
+
+  def modify[S](f: S => S): State[S, Unit] = for {
+    s <- get
+    _ <- set(f(s))
+  } yield()
+
+  def get[S]: State[S, S] =
+    State(s => (s, s))
+
+  def set[S](s: S): State[S, Unit] =
+    State(_ => ((), s))
 
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
 }
