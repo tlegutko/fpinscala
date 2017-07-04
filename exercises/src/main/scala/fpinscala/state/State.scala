@@ -219,5 +219,15 @@ object State {
   def set[S](s: S): State[S, Unit] =
     State(_ => ((), s))
 
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = ???
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = {
+    State { s =>
+      val state = inputs.foldLeft(s) {
+        case (m @ Machine(_, 0, _), _) => m
+        case (Machine(true, candies, coins), Coin) => Machine(false, candies, coins + 1)
+        case (Machine(false, candies, coins), Turn) => Machine(true, candies - 1, coins)
+        case (m @ Machine(_, _, _), _) => m
+      }
+      ((state.candies, state.coins), state)
+    }
+  }
 }

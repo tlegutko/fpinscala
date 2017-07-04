@@ -51,6 +51,7 @@ class StateSpec extends FunSuite {
   }
 
   test("Dispenser machine") {
-    // State.simulateMachine(List(Coin, Turn)).run()
+    assert(State.simulateMachine(List(Coin, Turn)).run(Machine(true, 1, 0)) ==
+             (((0, 1), (Machine(true, 0, 1)))))
   }
 }
