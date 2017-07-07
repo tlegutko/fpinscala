@@ -2,6 +2,7 @@ package fpinscala.parallelism
 
 import java.util.concurrent._
 import language.implicitConversions
+import scala.collection.immutable.Map
 
 object Par {
   type Par[A] = ExecutorService => Future[A]
@@ -61,7 +62,7 @@ object Par {
 
   def sequence2[A](l: List[Par[A]]): Par[List[A]] = es => {
     val lb = l.foldLeft(List.empty[A]) {
-        case (li, pa) => pa(es).get :: li
+      case (li, pa) => pa(es).get :: li
     }
     UnitFuture(lb)
   }
@@ -70,7 +71,7 @@ object Par {
     l.foldLeft(unit(List.empty[A]))((pl, pa) => map2(pa, pl)(_ :: _))
 
   def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] =
-    parFlatMap(l)(a => if(f(a)) List(a) else List.empty)
+    parFlatMap(l)(a => if (f(a)) List(a) else List.empty)
 
   def parFlatMap[A, B](l: List[A])(f: A => List[B]): Par[List[B]] =
     map(parMap(l)(f))(_.flatten)
@@ -86,7 +87,7 @@ object Par {
 
   def map3[A, B, C, D](pa: Par[A], pb: Par[B], pc: Par[C])(f: (A, B, C) => D): Par[D] = {
     val pab = map2(pa, pb)((a, b) => ((a, b)))
-    map2(pab, pc){
+    map2(pab, pc) {
       case ((a, b), c) => f(a, b, c)
     }
   }
@@ -94,7 +95,7 @@ object Par {
   def map4[A, B, C, D, E](pa: Par[A], pb: Par[B], pc: Par[C], pd: Par[D])(f: (A, B, C, D) => E): Par[E] = {
     val pab = product(pa, pb)
     val pcd = product(pc, pd)
-    map2(pab, pcd){
+    map2(pab, pcd) {
       case ((a, b), (c, d)) => f(a, b, c, d)
     }
   }
@@ -116,6 +117,58 @@ object Par {
     es =>
       if (run(es)(cond).get) t(es) // Notice we are blocking on the result of `cond`.
       else f(es)
+
+  def choiceN[A](pa: Par[Int])(choices: List[Par[A]]): Par[A] = es => {
+    val choice = map(pa) { a =>
+      if (choices.isDefinedAt(a)) Some(choices(a))
+      else None
+    }
+    choice(es).get.get(es) // how to return "orElse"? separate arg for "orElse" case probably
+  }
+
+  def choiceWithChoiceN[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    choiceN(map(cond)(b => if (b) 0 else 1))(List(t, f))
+
+  def choiceMap[A, B](a: Par[A])(choices: Map[A, Par[B]]): Par[B] = es => {
+    val choice = a(es).get
+    choices.get(choice).get(es) // again, how to handle error case nicely?
+  }
+
+  def chooser[A, B](a: Par[A])(choices: A => Par[B]): Par[B] =
+    es => {
+      val choice = a(es).get
+      choices(choice)(es)
+    }
+
+  def flatMap[A, B](a: Par[A])(choices: A => Par[B]): Par[B] =
+    es => {
+      val choice = a(es).get
+      choices(choice)(es)
+    }
+
+  def join2[A](a: Par[Par[A]]): Par[A] =
+    flatMap(a)(fa => fa)
+
+  def join[A](a: Par[Par[A]]): Par[A] =
+    es => {
+      val pa = a(es).get
+      pa(es)
+    }
+
+  def flatMapViaJoin[A, B](a: Par[A])(f: A => Par[B]): Par[B] =
+    join(map(a)(f))
+
+  def choiceWithChooser[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    chooser(cond)(b => if (b) t else f)
+
+  def choiceNWithChooser[A](pa: Par[Int])(choices: List[Par[A]]): Par[A] =
+    chooser(pa)(n => choices(n))
+
+  def map2ViaFlatMapAndUnit[A, B, C](a: Par[A], b: Par[B])(f: (A, B) => C): Par[C] = {
+    flatMap(a)(aa => {
+      flatMap(b)(bb => unit(f(aa, bb)))
+    })
+  }
 
   /* Gives us infix syntax for `Par`. */
   implicit def toParOps[A](p: Par[A]): ParOps[A] = new ParOps(p)

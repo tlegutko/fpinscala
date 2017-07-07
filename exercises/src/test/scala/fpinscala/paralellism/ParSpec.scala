@@ -29,4 +29,10 @@ class ParSpect extends FunSuite {
   test("parCount") {
     assert(parCount(List("what a day", "it is", "today"))(es).get == 6)
   }
+
+  test("choiceN, choiceMap") {
+    assert(choiceN(async(0))(List(async(1), async(2), async(3)))(es).get == 1)
+    assert(choiceMap(async("a"))(Map("a" -> async(1), "b" -> async(2)))(es).get == 1)
+  }
+
 }
