@@ -45,6 +45,9 @@ object RNG {
 
   }
 
+  def boolean(rng: RNG): (Boolean, RNG) =
+    rng.nextInt match { case (i, rng2) => (i % 2 == 0, rng2) }
+
   def double(rng: RNG): (Double, RNG) = {
     val (n, rng2) = nonNegativeInt(rng)
     ((-n / Int.MinValue).toDouble, rng2)
@@ -169,7 +172,7 @@ case class State[S, +A](run: S => (A, S)) {
     State { s =>
       val (a, s2) = run(s)
       (f(a), s2)
-    }    
+    }
 
   def map2V2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
     State { s =>
@@ -188,7 +191,7 @@ case class State[S, +A](run: S => (A, S)) {
     flatMap(a => unit(f(a)))
 
   def map2[B, C](sb: State[S, B])(f: (A, B) => C): State[S, C] =
-    flatMap{ a =>
+    flatMap { a =>
       sb.map(b => f(a, b))
     }
 }
@@ -211,7 +214,7 @@ object State {
   def modify[S](f: S => S): State[S, Unit] = for {
     s <- get
     _ <- set(f(s))
-  } yield()
+  } yield ()
 
   def get[S]: State[S, S] =
     State(s => (s, s))

@@ -115,6 +115,9 @@ trait Stream[+A] {
   def map[B](f: A => B): Stream[B] =
     foldRight(empty[B])((a, b) => cons(f(a), b))
 
+  def map2[B, C](s: Stream[B])(f: (A, B) => C): Stream[C] =
+    zip(s).map{ case (a, b) => f(a, b) }
+
   def filter(f: A => Boolean): Stream[A] =
     foldRight(empty[A])((a, b) => if (f(a)) cons(a, b) else b)
 
@@ -170,7 +173,7 @@ trait Stream[+A] {
     } append Stream(empty)
 
   def scanRight[B](z: B)(f: (A, => B) => B): Stream[B] = {
-    foldRight(z, Stream(z)){
+    foldRight((z, Stream(z))){
       case (h, (x, s)) => {
         val fhx = f(h, x)
         (fhx, cons(fhx, s))
@@ -224,5 +227,5 @@ object Stream {
     unfold(n)(n => Some((n, n + 1)))
 
   def fibsWithUnfold(): Stream[Int] =
-    unfold(1, 0) { case (curr, prev) => Some((prev, (curr + prev, curr))) }
+    unfold((1, 0)) { case (curr, prev) => Some((prev, (curr + prev, curr))) }
 }
