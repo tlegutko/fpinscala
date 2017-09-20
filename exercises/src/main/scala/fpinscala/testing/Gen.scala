@@ -74,7 +74,7 @@ object Prop {
     (max, n, rng) =>
       val casesPerSize = n / max + 1
       val props: List[Prop] =
-        Stream.from(0).take(max + 1).map(i => forAll(g)(f)).toList
+        Stream.from(0).take(max + 1).map(i => forAll(g(i))(f)).toList
       val p: Prop = props.map(p => Prop((max, n, rng) => p.run(max, casesPerSize, rng))).
         reduceLeft(_ && _)
       p.run(max, n, rng).map {
@@ -86,6 +86,23 @@ object Prop {
   def forAll[A](g: SGen[A])(f: A => Boolean): Prop = g match {
     case Unsized(g2) => forAll(g2)(f)
     case Sized(g3) => forAll(g3)(f)
+  }
+
+  def run(p: Prop,
+    maxSize: Int = 100, // A default argument of `200`
+    testCases: Int = 100,
+    rng: RNG = RNG.Simple(System.currentTimeMillis)): Boolean = {
+    (p.run(maxSize, testCases, rng): @unchecked) match {
+      case Left(msg) =>
+        println("! test failed:\n" + msg); false
+      case Right((Unfalsified, n)) =>
+        println("+ property unfalsified, ran " + n + " tests"); true
+      case Right((Proven, n)) =>
+        println("+ property proven, ran " + n + " tests"); true
+      case Right((Exhausted, n)) =>
+        println("+ property unfalsified up to max size, ran " +
+          n + " tests"); true
+    }
   }
 
   def buildMsg[A](s: A, e: Exception): String =
@@ -209,6 +226,9 @@ object Gen {
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =
     Sized { n => Gen.listOfN(n, g) }
+
+  def listOf1[A](g: Gen[A]): SGen[List[A]] =
+    Sized { n => Gen.listOfN(n max 1, g) }
 
 }
 
